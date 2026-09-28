@@ -30,6 +30,19 @@ body.dark .orb-peach  { background:radial-gradient(circle,#2E1065 0%,#0A0A12 80%
 body.dark .orb-purple { background:radial-gradient(circle,#1E1B4B 0%,#0A0A12 80%) !important; opacity:0.5; }
 body.dark .orb-orange { background:radial-gradient(circle,#082F49 0%,#0A0A12 80%) !important; opacity:0.5; }
 
+/* ── 輸入框提示文字（Placeholder）對比度無障礙優化 ── */
+::placeholder, input::placeholder, textarea::placeholder, select::placeholder {
+  color: var(--text-mid);
+  opacity: 0.85;
+}
+body.dark ::placeholder,
+body.dark input::placeholder,
+body.dark textarea::placeholder,
+body.dark select::placeholder {
+  color: #B8B5C5 !important;
+  opacity: 0.95 !important;
+}
+
 /* ── 顯示/隱藏 ── */
 .view-hidden { display: none !important; }
 .view-active { display: block !important; }
@@ -98,7 +111,30 @@ body.dark .btn-secondary { background:rgba(255,255,255,0.08); color:#F1F0F7; bor
 .btn-disabled { background:rgba(120,120,120,0.18) !important; color:rgba(150,150,150,0.6) !important; cursor:not-allowed !important; pointer-events:none; }
 
 .form-links { display:flex; justify-content:space-between; margin-top:16px; font-size:0.85rem; color:var(--text-mid); }
-.form-links span { cursor:pointer; text-decoration:underline; }
+.form-links span, .form-link-btn {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  margin: 0;
+  font: inherit;
+  color: var(--text-mid);
+  cursor: pointer;
+  text-decoration: underline;
+  outline: none;
+  border-radius: 6px;
+  transition: opacity 0.2s, color 0.2s;
+}
+.form-link-btn:hover { opacity: 0.8; }
+.form-link-btn:focus-visible {
+  outline: 2px solid var(--text-hi);
+  outline-offset: 2px;
+}
+body.dark .form-link-btn {
+  color: #D8D4E5;
+}
+body.dark .form-link-btn:focus-visible {
+  outline: 2px solid #8E78FF;
+}
 #message { margin-top:12px; font-size:0.9rem; color:#E63946; min-height:20px; text-align:center; font-weight:600; }
 
 /* ── 月曆 ── */

@@ -23,9 +23,21 @@ function callGASAPI(payload, callback, onError, timeoutMs) {
   })
   .then(res => {
     clearTimeout(timeoutId);
-    return res.json();
+    return res.text();
   })
-  .then(data => {
+  .then(text => {
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      if (text && text.indexOf("Planit API is online") !== -1) {
+        console.warn("GAS Web App 轉向並回傳 doGet 狀態:", text);
+        if (onError) onError("服務短暫轉向，請重試");
+        return;
+      }
+      console.warn("GAS 回傳非 JSON 文字回應:", text);
+      throw parseErr;
+    }
     if (callback) callback(data);
   })
   .catch(err => {

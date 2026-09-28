@@ -1,5 +1,9 @@
 function doGet(e) {
-  return ContentService.createTextOutput("Planit API is online!");
+  return ContentService.createTextOutput(JSON.stringify({
+    success: true,
+    status: "online",
+    msg: "Planit API is online!"
+  })).setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
@@ -128,15 +132,20 @@ function doPost(e) {
     if (action === "rolloverTask") {
       var rows = sheet.getDataRange().getValues();
       var reqAcc = cleanStr(data.account);
+      var found = false;
       for (var i = 1; i < rows.length; i++) {
         if (cleanStr(rows[i][0]) === cleanStr(data.taskId)) {
           if (reqAcc && cleanStr(rows[i][1]) !== reqAcc) continue;
           sheet.getRange(i + 1, 5).setValue("🔴 緊急");
           sheet.getRange(i + 1, 7).setValue("'" + cleanStr(data.tomorrowDate));
+          found = true;
           break;
         }
       }
-      return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+      return ContentService.createTextOutput(JSON.stringify({
+        success: found,
+        msg: found ? "順延成功" : "找不到指定任務或無權限修改"
+      })).setMimeType(ContentService.MimeType.JSON);
     }
 
     // 5. 更新狀態（分戶防護）
@@ -357,6 +366,7 @@ function doPost(e) {
     if (action === "getLeaderboard") {
       var rows = sheet.getDataRange().getValues();
       var todayStr = getTodayDateStr();
+      var reqAcc = cleanStr(data.account);
       var stats = {}; // account -> { total: 0, completed: 0 }
 
       // 建立 account -> nickname 映射表
@@ -391,8 +401,15 @@ function doPost(e) {
       for (var user in stats) {
         if (stats[user].total > 0) {
           var rate = Math.round((stats[user].completed / stats[user].total) * 100);
+          var isMe = (reqAcc && user === reqAcc) ? true : false;
+          // 後端脫敏：若為信箱則自動去除網域（僅保留前綴），杜絕完整信箱洩漏
+          var safeAccount = user;
+          if (safeAccount.indexOf("@") !== -1) {
+            safeAccount = safeAccount.split("@")[0];
+          }
           rankings.push({
-            account: user,
+            account: safeAccount,
+            isMe: isMe,
             nickname: nickMap[user] || "",
             rate: rate,
             completed: stats[user].completed,
@@ -661,12 +678,22 @@ function generateSmartFallbackSteps(title) {
   var t = String(title || "").trim();
   if (!t) return ["釐清任務核心需求與目標", "蒐集必備資料並排定順序", "專注執行關鍵產出內容", "檢視成果品質並確認收尾"];
 
-  if (/(報告|簡報|演講|發表|demo|pitch)/i.test(t)) {
+  // 1. 口頭簡報、演講、Demo 類
+  if (/(簡報|演講|發表|demo|pitch|presentation|ppt|投影片|口頭報告)/i.test(t)) {
     return [
       "確立簡報核心架構與聽眾需求",
       "彙整關鍵數據並製作投影片初稿",
       "進行全程計時彩排與口條演練",
       "正式上台發表並記錄互動回饋"
+    ];
+  }
+  // 2. 書面報告、論文、企劃、研究心得類
+  if (/(報告|論文|期末報告|專案報告|企劃|文獻|書面|文件|筆記|心得)/i.test(t)) {
+    return [
+      "界定報告主題範疇與蒐集核心文獻",
+      "規劃各章節邏輯大綱與論點架構",
+      "專注撰寫正文論證與整理數據圖表",
+      "全文格式校對排版並最終定稿"
     ];
   }
   if (/(聚餐|吃飯|約會|聚會|派對|活動)/i.test(t)) {

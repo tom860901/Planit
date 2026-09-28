@@ -196,7 +196,7 @@ function openLeaderboardModal() {
   if (!container) return;
   container.innerHTML = `<div style="text-align:center; color:var(--text-mid); padding:24px;">計算今日先鋒榜中...</div>`;
 
-  callGASAPI({ action: 'getLeaderboard' }, (res) => {
+  callGASAPI({ action: 'getLeaderboard', account: currentUser }, (res) => {
     if (res && res.success && Array.isArray(res.rankings)) {
       renderLeaderboard(res.rankings);
     } else {
@@ -214,7 +214,8 @@ function closeLeaderboardModal() {
 /** 🎯 項目 4 & 5：格式化榜單使用者顯示名稱（支援自訂暱稱 + 信箱自動脫敏去 @gmail.com） */
 function formatLeaderboardName(item) {
   if (item.nickname && String(item.nickname).trim()) return String(item.nickname).trim();
-  if (item.account === currentUser) {
+  const isMe = Boolean(item.isMe || item.account === currentUser || (currentUser && currentUser.includes('@') && item.account === currentUser.split('@')[0]));
+  if (isMe) {
     const localNick = localStorage.getItem('planit_nick_' + currentUser);
     if (localNick && localNick.trim()) return localNick.trim();
   }
@@ -233,7 +234,7 @@ function renderLeaderboard(rankings) {
 
   container.innerHTML = '';
   rankings.forEach((item, index) => {
-    const isMe = (item.account === currentUser);
+    const isMe = Boolean(item.isMe || (item.account === currentUser) || (currentUser && currentUser.includes('@') && item.account === currentUser.split('@')[0]));
     let rankBadge = `${index + 1}`;
     if (index === 0) rankBadge = '🥇';
     else if (index === 1) rankBadge = '🥈';

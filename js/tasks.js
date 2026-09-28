@@ -267,10 +267,13 @@ function markTaskCompleted() {
 
 function rolloverTaskToTomorrow() {
   if (!currentDetailTaskId) return;
-  const idx = allTasksData.findIndex(t => t.id === currentDetailTaskId);
+  const targetTaskId = currentDetailTaskId;
+  const idx = allTasksData.findIndex(t => t.id === targetTaskId);
   if (idx === -1) return;
 
   const currentTask = allTasksData[idx];
+  const prevDueDate = currentTask.dueDate;
+  const prevPriority = currentTask.priority;
   let nextDateStr = "";
 
   if (currentTask.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(currentTask.dueDate)) {
@@ -287,8 +290,30 @@ function rolloverTaskToTomorrow() {
 
   closeDetailModal();
 
-  callGASAPI({ action: 'rolloverTask', taskId: currentDetailTaskId, account: currentUser, tomorrowDate: nextDateStr },
-    () => {}, (err) => console.error("順延同步異常:", err));
+  const rollback = () => {
+    const rollIdx = allTasksData.findIndex(t => t.id === targetTaskId);
+    if (rollIdx !== -1) {
+      allTasksData[rollIdx].dueDate = prevDueDate;
+      allTasksData[rollIdx].priority = prevPriority;
+      renderCalendar();
+      renderUpcomingPanel();
+      renderTasks();
+    }
+    showToast("❌ 移到明天同步失敗，已恢復原狀態", "warning");
+  };
+
+  callGASAPI(
+    { action: 'rolloverTask', taskId: targetTaskId, account: currentUser, tomorrowDate: nextDateStr },
+    (res) => {
+      if (!res || !res.success) {
+        rollback();
+      }
+    },
+    (err) => {
+      console.error("順延同步異常:", err);
+      rollback();
+    }
+  );
   showToast("⏰ 任務已成功移至明日！", "warning");
 }
 
