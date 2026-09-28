@@ -86,7 +86,8 @@ function doPost(e) {
             status: String(rows[i][7] || "active"),
             w: rows[i][8] || 1,
             h: rows[i][9] || 1,
-            persistent: (rows[i][10] == 1 || rows[i][10] === true || rows[i][10] === "1") ? true : false
+            persistent: (rows[i][10] == 1 || rows[i][10] === true || rows[i][10] === "1") ? true : false,
+            isRoutine: (rows[i][11] == 1 || rows[i][11] === true || rows[i][11] === "1" || String(rows[i][3]||"").indexOf("例行") !== -1) ? true : false
           });
         }
       }
@@ -98,15 +99,16 @@ function doPost(e) {
       var id = "task_" + new Date().getTime();
       var dueDate = data.dueDate ? "'" + cleanStr(data.dueDate) : ""; 
       var persistentVal = (data.persistent == 1 || data.persistent === true || data.persistent === "1") ? 1 : 0;
-      sheet.appendRow([id, "'" + cleanStr(data.account), data.title, data.tag, data.priority, data.subTasks, dueDate, "active", 1, 1, persistentVal]);
+      var isRoutineVal = (data.isRoutine == 1 || data.isRoutine === true || data.isRoutine === "1" || String(data.tag || "").indexOf("例行") !== -1) ? 1 : 0;
+      sheet.appendRow([id, "'" + cleanStr(data.account), data.title, data.tag, data.priority, data.subTasks, dueDate, "active", 1, 1, persistentVal, isRoutineVal]);
       
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
-        task: { id: id, account: cleanStr(data.account), title: data.title, tag: data.tag, priority: data.priority, subTasks: data.subTasks, dueDate: data.dueDate, status: "active", w: 1, h: 1, persistent: persistentVal === 1 }
+        task: { id: id, account: cleanStr(data.account), title: data.title, tag: data.tag, priority: data.priority, subTasks: data.subTasks, dueDate: data.dueDate, status: "active", w: 1, h: 1, persistent: persistentVal === 1, isRoutine: isRoutineVal === 1 }
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 3. 儲存編輯（支援標籤、優先級、日期與持續顯示狀態更新，嚴密分戶防護）
+    // 3. 儲存編輯（支援標籤、優先級、日期、持續顯示與每日例行循環狀態更新，嚴密分戶防護）
     if (action === "updateTaskDetails") {
       var rows = sheet.getDataRange().getValues();
       var found = false;
@@ -120,6 +122,9 @@ function doPost(e) {
           sheet.getRange(i + 1, 7).setValue(data.dueDate ? "'" + cleanStr(data.dueDate) : ""); 
           if (typeof data.persistent !== 'undefined') {
             sheet.getRange(i + 1, 11).setValue(data.persistent ? 1 : 0);
+          }
+          if (typeof data.isRoutine !== 'undefined') {
+            sheet.getRange(i + 1, 12).setValue(data.isRoutine ? 1 : 0);
           }
           found = true;
           break;
@@ -385,7 +390,8 @@ function doPost(e) {
         var dDate = safeReadDate(rows[i][6]);
         var status = String(rows[i][7] || "active");
 
-        var isTodayTask = (dDate === todayStr) || tag.indexOf("例行公事") !== -1 || tag.indexOf("每日固定任務") !== -1 || tag.indexOf("例行重複") !== -1;
+        var isRoutine = (rows[i][11] == 1 || rows[i][11] === true || rows[i][11] === "1" || tag.indexOf("例行") !== -1);
+        var isTodayTask = (dDate === todayStr) || isRoutine;
         if (isTodayTask) {
           if (!stats[acc]) {
             stats[acc] = { total: 0, completed: 0 };

@@ -43,7 +43,7 @@ function updateAvatarBadge() {
 function autoSpawnDailyRoutineTasks() {
   if (!currentUser || !Array.isArray(allTasksData) || allTasksData.length === 0) return;
   const todayStr = getLocalDateString();
-  const routineTemplates = allTasksData.filter(t => t.tag && (t.tag.includes('例行公事') || t.tag.includes('每日固定任務') || t.tag.includes('例行重複')));
+  const routineTemplates = allTasksData.filter(t => t.isRoutine || (t.tag && (t.tag.includes('例行公事') || t.tag.includes('每日固定任務') || t.tag.includes('例行重複'))));
   if (routineTemplates.length === 0) return;
 
   const uniqueRoutines = new Map();
@@ -65,7 +65,8 @@ function autoSpawnDailyRoutineTasks() {
         id: newTaskId,
         account: currentUser,
         title: title,
-        tag: '🔁 例行公事',
+        tag: template.tag || '⚡️ 碎片 (<15m)',
+        isRoutine: true,
         priority: template.priority || '🟡 一般',
         subTasks: template.subTasks || '[]',
         dueDate: todayStr,

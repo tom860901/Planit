@@ -67,7 +67,7 @@ function renderUpcomingPanel() {
   // ── 1. 計算今日完成事項與待辦概況 (例如 5/8) ────────────────────
   const todayDueTasks = allTasksData.filter(t => {
     if (t.dueDate === todayStr) return true;
-    if (t.tag && (t.tag.includes('例行公事') || t.tag.includes('每日固定任務') || t.tag.includes('例行重複'))) return true;
+    if (t.isRoutine || (t.tag && (t.tag.includes('例行公事') || t.tag.includes('每日固定任務') || t.tag.includes('例行重複')))) return true;
     return false;
   });
 
@@ -172,7 +172,7 @@ function renderTodayDrawerContent() {
   const todayCompleted = allTasksData.filter(t => {
     if (t.status !== 'completed') return false;
     if (t.dueDate === todayStr) return true;
-    if (t.tag && (t.tag.includes('例行公事') || t.tag.includes('每日固定任務') || t.tag.includes('例行重複'))) return true;
+    if (t.isRoutine || (t.tag && (t.tag.includes('例行公事') || t.tag.includes('每日固定任務') || t.tag.includes('例行重複')))) return true;
     return false;
   });
 

@@ -57,7 +57,7 @@ function renderTasks() {
     const progress = total === 0 ? 0 : Math.round((done / total) * 100);
 
     const isUrgent  = task.priority === '🔴 緊急' || (task.dueDate && task.dueDate <= todayStr);
-    const isRoutine = task.tag && (task.tag.includes('例行公事') || task.tag.includes('每日固定任務') || task.tag.includes('例行重複'));
+    const isRoutine = Boolean(task.isRoutine || (task.tag && (task.tag.includes('例行公事') || task.tag.includes('每日固定任務') || task.tag.includes('例行重複'))));
 
     // 嚴格防呆：確保寬高只能為 1~3，避免歷史錯位資料將 2026 等日期當成卡片高度導致網頁爆炸
     let safeW = parseInt(task.w);
@@ -88,19 +88,21 @@ function renderTasks() {
       if (diffDays < 0) {
         dueHtml = `<div class="card-due-badge overdue-badge">🚨 逾期 ${Math.abs(diffDays)} 天</div>`;
       } else if (diffDays === 0) {
-        dueHtml = `<div class="card-due-badge today-due-badge">⚠️ 今日截止</div>`;
+        dueHtml = `<div class="card-due-badge today-due-badge">${isRoutine ? '🔁 ' : ''}⚠️ 今日截止</div>`;
       } else if (diffDays === 1) {
         dueHtml = `<div class="card-due-badge urgent-countdown-badge">🔥 倒數 1 天</div>`;
       } else {
         dueHtml = `<div class="card-due-badge countdown-badge">${persistIcon}⏳ 剩 ${diffDays} 天 (${task.dueDate.slice(5)})</div>`;
       }
     } else {
-      dueHtml = `<div class="card-due-badge routine-due-badge">📌 常駐</div>`;
+      dueHtml = isRoutine
+        ? `<div class="card-due-badge routine-due-badge">🔁 每日例行</div>`
+        : `<div class="card-due-badge routine-due-badge">📌 常駐</div>`;
     }
 
     card.innerHTML = `
       <div class="card-topbar">
-        <span class="card-tag-text">${task.tag}</span>
+        <span class="card-tag-text">${(isRoutine && !task.tag.includes('🔁')) ? '🔁 ' : ''}${task.tag || ''}</span>
         ${dueHtml}
       </div>
       <div class="card-title-text">${task.title}</div>

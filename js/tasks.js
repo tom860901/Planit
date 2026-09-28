@@ -69,6 +69,9 @@ function openTaskModal() {
   const persistentCb = document.getElementById('new-task-persistent');
   if (persistentCb) persistentCb.checked = false; // 預設不勾選，由使用者自由決定
 
+  const routineCb = document.getElementById('new-task-routine');
+  if (routineCb) routineCb.checked = false;
+
   // 重置標籤選取至第一項
   document.querySelectorAll('.new-tag-btn').forEach((b, i) => {
     b.classList.toggle('active', i === 0);
@@ -93,6 +96,9 @@ function confirmAddTask() {
   const persistentCb = document.getElementById('new-task-persistent');
   const isPersistent = persistentCb ? persistentCb.checked : false;
 
+  const routineCb = document.getElementById('new-task-routine');
+  const isRoutine = routineCb ? routineCb.checked : false;
+
   let subTasks = [];
   document.querySelectorAll('#manual-subtasks-container input').forEach(inp => {
     if (inp.value.trim()) subTasks.push({ step: inp.value.trim(), done: false });
@@ -106,12 +112,15 @@ function confirmAddTask() {
 
   callGASAPI({
     action: 'addTask', account: currentUser, title, tag, priority: pri,
-    subTasks: JSON.stringify(subTasks), dueDate, persistent: isPersistent ? 1 : 0
+    subTasks: JSON.stringify(subTasks), dueDate,
+    persistent: isPersistent ? 1 : 0,
+    isRoutine: isRoutine ? 1 : 0
   }, (res) => {
     isAddingTaskInProgress = false;
     if (res && res.success) {
       res.task.w = autoWidth;
       res.task.persistent = isPersistent;
+      res.task.isRoutine = isRoutine;
       if (!allTasksData.some(t => t.id === res.task.id)) {
         allTasksData.push(res.task);
       }
@@ -141,11 +150,22 @@ function openTaskDetail(taskId) {
   const editPersistentCb = document.getElementById('edit-task-persistent');
   if (editPersistentCb) editPersistentCb.checked = !!task.persistent;
 
-  // 同步設定任務類型標籤
+  const editRoutineCb = document.getElementById('edit-task-routine');
+  const isTaskRoutine = Boolean(task.isRoutine || (task.tag && (task.tag.includes('例行公事') || task.tag.includes('每日固定任務') || task.tag.includes('例行重複'))));
+  if (editRoutineCb) editRoutineCb.checked = isTaskRoutine;
+
+  // 同步設定任務類型標籤（若為舊版例行公事標籤，預設選取相容標籤）
   const currentTag = task.tag || '⚡️ 碎片 (<15m)';
+  let tagMatched = false;
   document.querySelectorAll('.edit-tag-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('data-val') === currentTag);
+    const isMatch = (btn.getAttribute('data-val') === currentTag);
+    if (isMatch) tagMatched = true;
+    btn.classList.toggle('active', isMatch);
   });
+  if (!tagMatched) {
+    const firstTagBtn = document.querySelector('.edit-tag-btn');
+    if (firstTagBtn) firstTagBtn.classList.add('active');
+  }
 
   let subTasksArr = [];
   try { subTasksArr = JSON.parse(task.subTasks); } catch (e) {}
@@ -216,6 +236,9 @@ function saveTaskEdits() {
   const editPersistentCb = document.getElementById('edit-task-persistent');
   const newPersistent = editPersistentCb ? editPersistentCb.checked : false;
 
+  const editRoutineCb = document.getElementById('edit-task-routine');
+  const newRoutine = editRoutineCb ? editRoutineCb.checked : false;
+
   if (!newTitle) { showToast("任務名稱不能為空！", "warning"); return; }
 
   allTasksData[idx].title      = newTitle;
@@ -223,11 +246,13 @@ function saveTaskEdits() {
   allTasksData[idx].priority   = newPriority;
   allTasksData[idx].tag        = newTag;
   allTasksData[idx].persistent = newPersistent;
+  allTasksData[idx].isRoutine  = newRoutine;
 
   callGASAPI({
     action: 'updateTaskDetails', taskId: currentDetailTaskId, account: currentUser,
     title: newTitle, dueDate: newDueDate, priority: newPriority, tag: newTag,
-    persistent: newPersistent ? 1 : 0
+    persistent: newPersistent ? 1 : 0,
+    isRoutine: newRoutine ? 1 : 0
   }, () => {});
 
   showToast("💾 變更已儲存！", "success");

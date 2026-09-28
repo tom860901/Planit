@@ -123,15 +123,16 @@
   <!-- ── VIEW 3：新增任務 Modal ────────────────── -->
   <div id="task-modal" class="modal-overlay view-hidden" onclick="handleModalOverlayClick(event,'task-modal')">
     <div class="window-shell modal-shell">
-      <button class="modal-close-corner-btn" onclick="closeTaskModal()">✕</button>
-      <h2 style="font-size:1.25rem; margin-bottom:16px; text-align:center;">✨ 新增目標任務</h2>
+      <div style="position:relative; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between;">
+        <h2 style="font-size:1.25rem; margin:0; flex:1; text-align:center; padding-left:32px;">✨ 新增目標任務</h2>
+        <button class="modal-close-corner-btn" style="position:static; flex-shrink:0; margin:0;" onclick="closeTaskModal()">✕</button>
+      </div>
 
       <div class="selector-group">
         <div class="selector-title">任務類型</div>
         <div class="tag-selector">
           <div class="tag-btn new-tag-btn active" onclick="selectOpt('.new-tag-btn',this)" data-val="⚡️ 碎片 (<15m)">⚡️ 碎片 (&lt;15m)</div>
           <div class="tag-btn new-tag-btn" onclick="selectOpt('.new-tag-btn',this)" data-val="🧠 深度專注">🧠 深度專注</div>
-          <div class="tag-btn new-tag-btn" onclick="selectOpt('.new-tag-btn',this)" data-val="🔁 例行公事">🔁 例行公事</div>
           <div class="tag-btn new-tag-btn" onclick="selectOpt('.new-tag-btn',this)" data-val="☕️ 生活/社交">☕️ 生活/社交</div>
         </div>
       </div>
@@ -150,10 +151,14 @@
         <div class="input-group" style="margin-bottom:0;">
           <input type="date" id="new-task-duedate">
         </div>
-        <div style="margin-top:8px; text-align:left;">
+        <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px; text-align:left;">
           <label class="persistent-toggle-label">
             <input type="checkbox" id="new-task-persistent" style="width:17px; height:17px; accent-color:#6C5CE7; cursor:pointer;">
             <span>📌 截止日前持續顯示（每日常駐推進）</span>
+          </label>
+          <label class="persistent-toggle-label">
+            <input type="checkbox" id="new-task-routine" style="width:17px; height:17px; accent-color:#3A86FF; cursor:pointer;">
+            <span>🔁 設為每日例行循環（每天醒來自動出現在看板）</span>
           </label>
         </div>
       </div>
@@ -181,12 +186,11 @@
   <!-- ── VIEW 4：任務詳情 Modal ─────────────────── -->
   <div id="detail-modal" class="modal-overlay view-hidden" onclick="handleModalOverlayClick(event,'detail-modal')">
     <div class="window-shell modal-shell" style="text-align:center;">
-      <button class="modal-close-corner-btn" onclick="closeDetailModal()">✕</button>
-
-      <div style="margin-bottom:12px;">
+      <div style="margin-bottom:14px; display:flex; align-items:center; gap:8px;">
         <input type="text" id="edit-task-title" class="edit-modal-input"
-          style="width:100%; padding:10px 14px; font-size:1.1rem; font-weight:700; text-align:center;"
+          style="flex:1; padding:10px 14px; font-size:1.1rem; font-weight:700; text-align:center;"
           placeholder="任務名稱">
+        <button class="modal-close-corner-btn" style="position:static; flex-shrink:0; margin:0;" onclick="closeDetailModal()">✕</button>
       </div>
 
       <div class="selector-group" style="text-align:left; margin-bottom:12px;">
@@ -194,7 +198,6 @@
         <div class="tag-selector" id="edit-tag-selector">
           <div class="tag-btn edit-tag-btn" onclick="selectOpt('.edit-tag-btn',this)" data-val="⚡️ 碎片 (<15m)">⚡️ 碎片 (&lt;15m)</div>
           <div class="tag-btn edit-tag-btn" onclick="selectOpt('.edit-tag-btn',this)" data-val="🧠 深度專注">🧠 深度專注</div>
-          <div class="tag-btn edit-tag-btn" onclick="selectOpt('.edit-tag-btn',this)" data-val="🔁 例行公事">🔁 例行公事</div>
           <div class="tag-btn edit-tag-btn" onclick="selectOpt('.edit-tag-btn',this)" data-val="☕️ 生活/社交">☕️ 生活/社交</div>
         </div>
       </div>
@@ -210,10 +213,14 @@
         </select>
       </div>
 
-      <div style="margin-bottom:12px; text-align:left;">
+      <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:8px; text-align:left;">
         <label class="persistent-toggle-label">
           <input type="checkbox" id="edit-task-persistent" style="width:17px; height:17px; accent-color:#6C5CE7; cursor:pointer;">
           <span>📌 截止日前持續顯示（每日常駐推進）</span>
+        </label>
+        <label class="persistent-toggle-label">
+          <input type="checkbox" id="edit-task-routine" style="width:17px; height:17px; accent-color:#3A86FF; cursor:pointer;">
+          <span>🔁 設為每日例行循環（每天醒來自動出現在看板）</span>
         </label>
       </div>
 
