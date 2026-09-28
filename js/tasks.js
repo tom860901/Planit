@@ -292,7 +292,7 @@ function rolloverTaskToTomorrow() {
   showToast("⏰ 任務已成功移至明日！", "warning");
 }
 
-// ── 已完成區（Archive）──────────────────────────────────────
+// ── 🎯 項目 7：已完成區（Archive - 按日期時間軸結構化分組）──
 
 function openArchiveModal() {
   const archiveList = document.getElementById('archive-list');
@@ -301,19 +301,65 @@ function openArchiveModal() {
 
   if (completedTasks.length === 0) {
     archiveList.innerHTML = `<div style="text-align:center; color:var(--text-mid); padding:20px;">目前沒有已完成的任務</div>`;
-  } else {
-    completedTasks.forEach(task => {
+    openModal('archive-modal');
+    return;
+  }
+
+  const todayStr = getLocalDateString();
+  const yObj = new Date();
+  yObj.setDate(yObj.getDate() - 1);
+  const yesterdayStr = getLocalDateString(yObj);
+
+  // 分組字典
+  const groups = {
+    today: { title: `📅 今天 (${todayStr})`, tasks: [] },
+    yesterday: { title: `📅 昨天 (${yesterdayStr})`, tasks: [] },
+    dates: {},
+    undated: { title: `📌 常駐 / 無特定期限`, tasks: [] }
+  };
+
+  completedTasks.forEach(task => {
+    if (task.dueDate === todayStr) {
+      groups.today.tasks.push(task);
+    } else if (task.dueDate === yesterdayStr) {
+      groups.yesterday.tasks.push(task);
+    } else if (task.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(task.dueDate)) {
+      if (!groups.dates[task.dueDate]) groups.dates[task.dueDate] = [];
+      groups.dates[task.dueDate].push(task);
+    } else {
+      groups.undated.tasks.push(task);
+    }
+  });
+
+  function renderGroup(title, tasks) {
+    if (!tasks || tasks.length === 0) return;
+    const header = document.createElement('div');
+    header.className = 'archive-date-header';
+    header.innerHTML = `<span>${title}</span> <span style="font-size:0.72rem; opacity:0.75;">(${tasks.length})</span>`;
+    archiveList.appendChild(header);
+
+    tasks.forEach(task => {
       const item = document.createElement('div');
       item.className = 'archive-item';
       item.innerHTML = `
         <div>
           <div style="font-weight:700; font-size:0.95rem;">✅ ${task.title}</div>
-          <div style="font-size:0.75rem; color:var(--text-mid);">${task.tag} | 期限: ${task.dueDate || '常駐'}</div>
+          <div style="font-size:0.75rem; color:var(--text-mid); margin-top:2px;">${task.tag || ''} | 優先度: ${task.priority || '🟡 一般'}</div>
         </div>
-        <button class="btn-main btn-secondary" onclick="restoreTask('${task.id}')">復原</button>`;
+        <button class="btn-main btn-secondary" style="padding:6px 12px; font-size:0.8rem; border-radius:10px;" onclick="restoreTask('${task.id}')">復原</button>`;
       archiveList.appendChild(item);
     });
   }
+
+  // 依時間軸順序渲染
+  renderGroup(groups.today.title, groups.today.tasks);
+  renderGroup(groups.yesterday.title, groups.yesterday.tasks);
+  const sortedDates = Object.keys(groups.dates).sort((a, b) => b.localeCompare(a));
+  sortedDates.forEach(d => {
+    renderGroup(`📅 ${d}`, groups.dates[d]);
+  });
+  renderGroup(groups.undated.title, groups.undated.tasks);
+
   openModal('archive-modal');
 }
 function closeArchiveModal() { closeModal('archive-modal'); }

@@ -102,7 +102,11 @@ async function submitManualForm() {
   const actionBtn = document.getElementById('action-btn');
 
   if (!acc || !pwd) { document.getElementById('message').innerText = "請輸入帳號與密碼！"; return; }
-  if (!isLoginMode && !email) { document.getElementById('message').innerText = "註冊請填寫電子信箱！"; return; }
+  if (!isLoginMode && (!email || !email.includes('@'))) {
+    document.getElementById('message').innerText = "⚠️ 請輸入有效的電子信箱（必填項目，供忘記密碼救援）！";
+    if (typeof showToast === 'function') showToast("⚠️ 請輸入有效的電子信箱以供密碼救援！", "warning");
+    return;
+  }
 
   document.getElementById('message').innerText = "連線驗證中...";
   actionBtn.disabled = true;

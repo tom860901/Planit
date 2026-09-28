@@ -34,7 +34,7 @@
       <input type="text" id="account" placeholder="帳號 Account" autocomplete="off">
     </div>
     <div class="input-group view-hidden" id="email-field-group">
-      <input type="email" id="email" placeholder="電子信箱 Email (接收歡迎信)" autocomplete="off">
+      <input type="email" id="email" placeholder="電子信箱 Email *(必填，用於密碼救援)" autocomplete="off">
     </div>
     <div class="input-group">
       <div class="pwd-wrapper">
@@ -97,10 +97,13 @@
     <!-- 右欄：今日待辦概況與即將到來 -->
     <div class="window-shell upcoming-panel">
       <!-- 🎯 今日待辦與完成事項模組 -->
-      <div class="today-overview-box" id="today-overview-box">
+      <div class="today-overview-box clickable-panel" id="today-overview-box" onclick="toggleTodayDrawer()" title="點擊展開/收合成就抽屜">
         <div class="today-overview-header">
           <span class="today-overview-title">📋 今日待辦</span>
-          <span class="today-overview-badge" id="today-stats-badge">(0/0)</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="today-overview-badge" id="today-stats-badge">(0/0)</span>
+            <span id="today-drawer-arrow" style="font-size:0.75rem; color:var(--text-mid); transition:transform 0.3s ease;">▼</span>
+          </div>
         </div>
         <div class="today-overview-desc" id="today-stats-desc">
           已完成 0 項 / 共 0 項待辦
@@ -108,6 +111,8 @@
         <div class="today-progress-bar-bg">
           <div class="today-progress-bar-fill" id="today-stats-progress"></div>
         </div>
+        <!-- 展開成就抽屜 -->
+        <div id="today-drawer-list" class="today-drawer-collapsed"></div>
       </div>
 
       <h3>🔔 即將到來</h3>
@@ -253,6 +258,13 @@
       </div>
 
       <div class="profile-info-row"><span>帳號 ID</span><strong id="p-acc">-</strong></div>
+      <div class="profile-info-row" style="align-items:center;">
+        <span>顯示暱稱</span>
+        <div style="display:flex; gap:6px; max-width:65%;">
+          <input type="text" id="profile-nickname-input" placeholder="自訂排行榜暱稱" style="width:125px; padding:4px 8px; border-radius:8px; border:1px solid rgba(0,0,0,0.15); background:rgba(255,255,255,0.7); font-size:0.85rem; color:var(--text-hi);">
+          <button class="btn-main" style="padding:4px 10px; font-size:0.78rem; border-radius:8px;" onclick="saveUserNickname()">儲存</button>
+        </div>
+      </div>
       <div class="profile-info-row"><span>綁定信箱</span><strong id="p-email">-</strong></div>
       <div class="profile-info-row"><span>註冊時間</span><span id="p-created" style="color:var(--text-mid); font-size:0.85rem; font-weight:600;">-</span></div>
       <div class="profile-info-row"><span>上次登入</span><span id="p-login"   style="color:var(--text-mid); font-size:0.85rem; font-weight:600;">-</span></div>

@@ -539,3 +539,106 @@ body.dark .lb-progress-bar {
   color: var(--text-mid, #666);
 }
 
+/* ── 🎯 今日待辦抽屜與完成區時間軸升級樣式 ── */
+.clickable-panel {
+  cursor: pointer;
+  user-select: none;
+  border-radius: 18px;
+  padding: 10px;
+  margin: -10px -10px 14px -10px;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.clickable-panel:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+body.dark .clickable-panel:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.today-drawer-collapsed {
+  display: none !important;
+}
+
+.today-drawer-expanded {
+  display: flex !important;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+  max-height: 180px;
+  overflow-y: auto;
+  text-align: left;
+}
+body.dark .today-drawer-expanded {
+  border-top-color: rgba(255, 255, 255, 0.15);
+}
+
+.drawer-task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(42, 157, 143, 0.08);
+  color: var(--text-hi);
+  transition: all 0.2s;
+}
+body.dark .drawer-task-item {
+  background: rgba(72, 202, 228, 0.12);
+  color: #F1F0F7;
+}
+
+.drawer-task-title {
+  text-decoration: line-through;
+  opacity: 0.85;
+  max-width: 175px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* 📁 完成區卡片與時間軸樣式 */
+.archive-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 14px;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+.archive-item:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.8);
+}
+body.dark .archive-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #F1F0F7;
+}
+body.dark .archive-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.archive-date-header {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-mid);
+  margin: 16px 0 8px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+body.dark .archive-date-header {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+  color: #C5BFDB;
+}
+
+

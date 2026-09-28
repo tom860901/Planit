@@ -29,11 +29,58 @@ function getLocalDateString(dateObj = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-/** 更新右上角頭像顯示首字 */
+/** 更新右上角頭像顯示首字（優先使用自訂暱稱） */
 function updateAvatarBadge() {
   const badge = document.getElementById('user-avatar-badge');
   if (currentUser && badge) {
-    badge.innerText = currentUser.charAt(0).toUpperCase();
+    const localNick = localStorage.getItem('planit_nick_' + currentUser);
+    const displayStr = (localNick && localNick.trim()) ? localNick.trim() : currentUser;
+    badge.innerText = displayStr.charAt(0).toUpperCase();
+  }
+}
+
+/** 🎯 項目 8：例行公事跨日無感自動生成（方案 A） */
+function autoSpawnDailyRoutineTasks() {
+  if (!currentUser || !Array.isArray(allTasksData) || allTasksData.length === 0) return;
+  const todayStr = getLocalDateString();
+  const routineTemplates = allTasksData.filter(t => t.tag && (t.tag.includes('例行公事') || t.tag.includes('每日固定任務') || t.tag.includes('例行重複')));
+  if (routineTemplates.length === 0) return;
+
+  const uniqueRoutines = new Map();
+  routineTemplates.forEach(t => {
+    if (!uniqueRoutines.has(t.title)) uniqueRoutines.set(t.title, t);
+  });
+
+  let spawnedAny = false;
+  uniqueRoutines.forEach((template, title) => {
+    // 檢查今天是否已經有這筆例行任務（無論是 active 還是 completed）
+    const existsToday = allTasksData.some(t => t.title === title && t.dueDate === todayStr);
+    const spawnKey = `planit_routine_spawned_${currentUser}_${todayStr}_${title}`;
+
+    if (!existsToday && !localStorage.getItem(spawnKey)) {
+      localStorage.setItem(spawnKey, "1");
+      spawnedAny = true;
+      const newTaskId = 'task_' + new Date().getTime() + Math.floor(Math.random() * 1000);
+      const newTask = {
+        id: newTaskId,
+        account: currentUser,
+        title: title,
+        tag: '🔁 例行公事',
+        priority: template.priority || '🟡 一般',
+        subTasks: template.subTasks || '[]',
+        dueDate: todayStr,
+        status: 'active',
+        w: 1,
+        h: 1,
+        persistent: false
+      };
+      allTasksData.unshift(newTask);
+      callGASAPI({ action: 'createTask', ...newTask }, () => {});
+    }
+  });
+
+  if (spawnedAny) {
+    showToast("✨ 已為您自動排入今日例行工作！", "info");
   }
 }
 
@@ -41,6 +88,7 @@ function updateAvatarBadge() {
 function fetchTasks() {
   callGASAPI({ action: 'getTasks', account: currentUser }, (data) => {
     allTasksData = Array.isArray(data) ? data : [];
+    autoSpawnDailyRoutineTasks();
     renderCalendar();
     renderUpcomingPanel();
     renderTasks();

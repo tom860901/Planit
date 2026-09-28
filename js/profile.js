@@ -10,12 +10,23 @@ function openProfileModal() {
   document.getElementById('p-acc').innerText   = currentUser;
   document.getElementById('p-email').innerText = "載入中...";
 
+  const nickInput = document.getElementById('profile-nickname-input');
+  if (nickInput) {
+    nickInput.value = localStorage.getItem('planit_nick_' + currentUser) || "";
+  }
+
   callGASAPI({ action: 'getUserProfile', account: currentUser }, (res) => {
     if (res && res.success && res.profile) {
       document.getElementById('p-email').innerText   = res.profile.email;
       document.getElementById('p-created').innerText = res.profile.createdAt   || "無紀錄";
       document.getElementById('p-login').innerText   = res.profile.lastLoginAt || "無紀錄";
       document.getElementById('profile-streak-days').innerText = res.profile.checkinStreak;
+
+      if (res.profile.nickname && nickInput) {
+        nickInput.value = res.profile.nickname;
+        localStorage.setItem('planit_nick_' + currentUser, res.profile.nickname);
+        if (typeof updateAvatarBadge === 'function') updateAvatarBadge();
+      }
 
       const todayStr = getLocalDateString();
       const checkBtn = document.getElementById('checkin-action-btn');
@@ -31,6 +42,21 @@ function openProfileModal() {
 }
 
 function closeProfileModal() { closeModal('profile-modal'); }
+
+/** 🎯 項目 5：儲存自訂暱稱 */
+function saveUserNickname() {
+  const input = document.getElementById('profile-nickname-input');
+  if (!input) return;
+  const newNick = input.value.trim();
+  localStorage.setItem('planit_nick_' + currentUser, newNick);
+  if (typeof updateAvatarBadge === 'function') updateAvatarBadge();
+  callGASAPI({ action: 'updateNickname', account: currentUser, nickname: newNick }, () => {});
+  if (typeof showToast === 'function') {
+    showToast("✅ 暱稱已成功儲存！", "success");
+  } else {
+    alert("暱稱已儲存！");
+  }
+}
 
 // ── 每日打卡 ────────────────────────────────────────────────
 

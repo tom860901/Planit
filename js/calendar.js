@@ -65,7 +65,6 @@ function renderUpcomingPanel() {
   const todayStr = getLocalDateString();
 
   // ── 1. 計算今日完成事項與待辦概況 (例如 5/8) ────────────────────
-  // ── 1. 計算今日完成事項與待辦概況 (方案 B：聚焦今日截止與每日固定任務) ──
   const todayDueTasks = allTasksData.filter(t => {
     if (t.dueDate === todayStr) return true;
     if (t.tag && (t.tag.includes('例行公事') || t.tag.includes('每日固定任務') || t.tag.includes('例行重複'))) return true;
@@ -75,25 +74,33 @@ function renderUpcomingPanel() {
   let completedCount = 0;
   let totalCount = 0;
 
-  if (todayDueTasks.length > 0) {
-    // 今日有指定到期日或每日固定任務
-    completedCount = todayDueTasks.filter(t => t.status === 'completed').length;
-    totalCount = todayDueTasks.length;
-  } else {
-    // 若今日無特定到期日與固定任務，以全體任務統計
-    completedCount = allTasksData.filter(t => t.status === 'completed').length;
-    totalCount = allTasksData.length;
-  }
-
   const badgeEl = document.getElementById('today-stats-badge');
   const descEl  = document.getElementById('today-stats-desc');
   const progEl  = document.getElementById('today-stats-progress');
 
-  if (badgeEl && descEl && progEl) {
-    badgeEl.innerText = `(${completedCount}/${totalCount})`;
-    const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-    descEl.innerText = `已完成 ${completedCount} 項 / 共 ${totalCount} 項待辦 (${pct}%)`;
-    progEl.style.width = `${pct}%`;
+  if (todayDueTasks.length > 0) {
+    // 今日有指定到期日或每日固定任務
+    completedCount = todayDueTasks.filter(t => t.status === 'completed').length;
+    totalCount = todayDueTasks.length;
+    if (badgeEl && descEl && progEl) {
+      badgeEl.innerText = `(${completedCount}/${totalCount})`;
+      const pct = Math.round((completedCount / totalCount) * 100);
+      descEl.innerText = `已完成 ${completedCount} 項 / 共 ${totalCount} 項待辦 (${pct}%)`;
+      progEl.style.width = `${pct}%`;
+    }
+  } else {
+    // 🎯 項目 3 修正：今日暫無排定待辦，標準與先鋒榜 100% 統一！
+    if (badgeEl && descEl && progEl) {
+      badgeEl.innerText = `(0/0)`;
+      const longTermHint = allTasksData.length > 0 ? `（已有 ${allTasksData.length} 項長期/常駐任務）` : '';
+      descEl.innerText = `今日暫無排定待辦 ${longTermHint}`;
+      progEl.style.width = `0%`;
+    }
+  }
+
+  // 🎯 若抽屜目前處於展開狀態，即時刷新抽屜內容
+  if (typeof renderTodayDrawerContent === 'function' && isTodayDrawerOpen) {
+    renderTodayDrawerContent();
   }
 
   // ── 2. 渲染即將到來清單 ──────────────────────────────────────
@@ -140,6 +147,48 @@ function jumpToToday() {
   renderTasks();
 }
 
+// ── 🎯 今日待辦抽屜折疊邏輯 ──────────────────────────────────
+let isTodayDrawerOpen = false;
+
+function toggleTodayDrawer() {
+  const drawer = document.getElementById('today-drawer-list');
+  const arrow  = document.getElementById('today-drawer-arrow');
+  if (!drawer) return;
+  isTodayDrawerOpen = !isTodayDrawerOpen;
+  if (isTodayDrawerOpen) {
+    drawer.className = 'today-drawer-expanded';
+    if (arrow) arrow.style.transform = 'rotate(180deg)';
+    renderTodayDrawerContent();
+  } else {
+    drawer.className = 'today-drawer-collapsed';
+    if (arrow) arrow.style.transform = 'rotate(0deg)';
+  }
+}
+
+function renderTodayDrawerContent() {
+  const drawer = document.getElementById('today-drawer-list');
+  if (!drawer) return;
+  const todayStr = getLocalDateString();
+  const todayCompleted = allTasksData.filter(t => {
+    if (t.status !== 'completed') return false;
+    if (t.dueDate === todayStr) return true;
+    if (t.tag && (t.tag.includes('例行公事') || t.tag.includes('每日固定任務') || t.tag.includes('例行重複'))) return true;
+    return false;
+  });
+
+  if (todayCompleted.length === 0) {
+    drawer.innerHTML = `<div style="font-size:0.75rem; color:var(--text-mid); text-align:center; padding:6px 0;">今日尚未有完成項目，加油！</div>`;
+    return;
+  }
+
+  drawer.innerHTML = todayCompleted.map(t => `
+    <div class="drawer-task-item">
+      <span class="drawer-task-title" title="${t.title}">✅ ${t.title}</span>
+      <span style="font-size:0.72rem; opacity:0.8;">${t.tag || ''}</span>
+    </div>
+  `).join('');
+}
+
 // ── 🏆 今日敏捷先鋒榜 Modal ──────────────────────────────────
 function openLeaderboardModal() {
   openModal('leaderboard-modal');
@@ -162,6 +211,18 @@ function closeLeaderboardModal() {
   closeModal('leaderboard-modal');
 }
 
+/** 🎯 項目 4 & 5：格式化榜單使用者顯示名稱（支援自訂暱稱 + 信箱自動脫敏去 @gmail.com） */
+function formatLeaderboardName(item) {
+  if (item.nickname && String(item.nickname).trim()) return String(item.nickname).trim();
+  if (item.account === currentUser) {
+    const localNick = localStorage.getItem('planit_nick_' + currentUser);
+    if (localNick && localNick.trim()) return localNick.trim();
+  }
+  const acc = String(item.account || '');
+  if (acc.includes('@')) return acc.split('@')[0];
+  return acc;
+}
+
 function renderLeaderboard(rankings) {
   const container = document.getElementById('leaderboard-container');
   if (!container) return;
@@ -178,13 +239,15 @@ function renderLeaderboard(rankings) {
     else if (index === 1) rankBadge = '🥈';
     else if (index === 2) rankBadge = '🥉';
 
+    const displayName = formatLeaderboardName(item);
+
     const row = document.createElement('div');
     row.className = `lb-item ${isMe ? 'is-current-user' : ''}`;
     row.innerHTML = `
       <div class="lb-rank">${rankBadge}</div>
       <div class="lb-user-info">
         <div class="lb-username">
-          <span>${item.account}</span>
+          <span>${displayName}</span>
           ${isMe ? '<span class="lb-me-tag">我</span>' : ''}
         </div>
         <div class="lb-progress-bar">
@@ -199,4 +262,5 @@ function renderLeaderboard(rankings) {
     container.appendChild(row);
   });
 }
+
 
