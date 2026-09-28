@@ -319,7 +319,8 @@ function openArchiveModal() {
   };
 
   completedTasks.forEach(task => {
-    if (task.dueDate === todayStr) {
+    const isRoutine = task.tag && (task.tag.includes('例行公事') || task.tag.includes('每日固定任務') || task.tag.includes('例行重複'));
+    if (task.dueDate === todayStr || (isRoutine && !task.dueDate)) {
       groups.today.tasks.push(task);
     } else if (task.dueDate === yesterdayStr) {
       groups.yesterday.tasks.push(task);

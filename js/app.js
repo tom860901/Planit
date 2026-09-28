@@ -53,8 +53,8 @@ function autoSpawnDailyRoutineTasks() {
 
   let spawnedAny = false;
   uniqueRoutines.forEach((template, title) => {
-    // 檢查今天是否已經有這筆例行任務（無論是 active 還是 completed）
-    const existsToday = allTasksData.some(t => t.title === title && t.dueDate === todayStr);
+    // 檢查今天是否已經有這筆例行任務（若有指定今天的任務，或已有無日期的例行任務，皆不重複產生）
+    const existsToday = allTasksData.some(t => t.title === title && (t.dueDate === todayStr || !t.dueDate));
     const spawnKey = `planit_routine_spawned_${currentUser}_${todayStr}_${title}`;
 
     if (!existsToday && !localStorage.getItem(spawnKey)) {
