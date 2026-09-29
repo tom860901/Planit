@@ -293,13 +293,6 @@
         <button class="btn-main btn-secondary" style="padding:10px; font-size:0.85rem;" onclick="submitPasswordReset()">確認變更密碼</button>
       </div>
 
-      <div style="margin-top:16px; padding-top:14px; border-top:1px dashed rgba(0,0,0,0.1);">
-        <h4 style="font-size:0.9rem; margin-bottom:8px; color:var(--text-mid);">🧪 測試與展示維護</h4>
-        <button class="btn-main" style="width:100%; padding:9px; font-size:0.85rem; background:rgba(230,57,70,0.08); color:#E63946; border:1px dashed #E63946;" onclick="resetDemoData()">
-          🧹 重設展示帳號資料 (清除髒資料與重設任務)
-        </button>
-      </div>
-
       <button class="btn-main btn-secondary" style="margin-top:16px;" onclick="closeProfileModal()">關閉</button>
     </div>
   </div>
@@ -377,8 +370,8 @@
   <div id="leaderboard-modal" class="modal-overlay view-hidden" onclick="handleModalOverlayClick(event,'leaderboard-modal')">
     <div class="window-shell modal-shell" style="text-align:center; max-width:420px;">
       <button class="modal-close-corner-btn" onclick="closeLeaderboardModal()">✕</button>
-      <h2 style="font-size:1.25rem; margin-bottom:8px;">🏆 今日敏捷先鋒榜</h2>
-      <p style="color:var(--text-mid); margin-bottom:16px; font-size:0.85rem;">依今日任務達成率 (%) 即時排行</p>
+      <h2 style="font-size:1.25rem; margin-bottom:8px;">🏆 本週敏捷先鋒榜</h2>
+      <p style="color:var(--text-mid); margin-bottom:16px; font-size:0.85rem;" id="lb-subtitle">依本週任務達成率 (%) 即時排行（每週一自動重置）</p>
       
       <div id="leaderboard-container" style="max-height:320px; overflow-y:auto; margin-bottom:16px;">
         <div style="text-align:center; color:var(--text-mid); padding:24px;">載入排行榜中...</div>

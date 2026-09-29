@@ -189,18 +189,24 @@ function renderTodayDrawerContent() {
   `).join('');
 }
 
-// ── 🏆 今日敏捷先鋒榜 Modal ──────────────────────────────────
+// ── 🏆 本週敏捷先鋒榜 Modal ──────────────────────────────────
 function openLeaderboardModal() {
   openModal('leaderboard-modal');
   const container = document.getElementById('leaderboard-container');
   if (!container) return;
-  container.innerHTML = `<div style="text-align:center; color:var(--text-mid); padding:24px;">計算今日先鋒榜中...</div>`;
+  container.innerHTML = `<div style="text-align:center; color:var(--text-mid); padding:24px;">計算本週先鋒榜中...</div>`;
 
   callGASAPI({ action: 'getLeaderboard', account: currentUser }, (res) => {
     if (res && res.success && Array.isArray(res.rankings)) {
+      if (res.weekStart && res.weekEnd) {
+        const sub = document.getElementById('lb-subtitle');
+        if (sub) {
+          sub.innerText = `依本週任務達成率 (%) 即時排行 (${res.weekStart.slice(5)} ~ ${res.weekEnd.slice(5)}，每週一重置)`;
+        }
+      }
       renderLeaderboard(res.rankings);
     } else {
-      container.innerHTML = `<div style="text-align:center; color:var(--text-mid); padding:24px;">暫無今日排行資料</div>`;
+      container.innerHTML = `<div style="text-align:center; color:var(--text-mid); padding:24px;">暫無本週排行資料</div>`;
     }
   }, () => {
     container.innerHTML = `<div style="text-align:center; color:#E63946; padding:24px;">讀取榜單失敗</div>`;
@@ -228,7 +234,7 @@ function renderLeaderboard(rankings) {
   const container = document.getElementById('leaderboard-container');
   if (!container) return;
   if (!rankings || rankings.length === 0) {
-    container.innerHTML = `<div style="text-align:center; color:var(--text-mid); padding:24px; font-size:0.85rem;">今日尚無成員排定待辦任務，快來建立搶下第一名！</div>`;
+    container.innerHTML = `<div style="text-align:center; color:var(--text-mid); padding:24px; font-size:0.85rem;">本週尚無成員排定待辦任務，快來建立搶下第一名！</div>`;
     return;
   }
 

@@ -372,12 +372,20 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 16. 今日敏捷先鋒榜（依今日任務達成率排行）
+    // 16. 本週敏捷先鋒榜（依本週任務達成率排行，每週一自動重置）
     if (action === "getLeaderboard") {
       var rows = sheet.getDataRange().getValues();
-      var todayStr = getTodayDateStr();
       var reqAcc = cleanStr(data.account);
       var stats = {}; // account -> { total: 0, completed: 0 }
+
+      // 計算本週範圍（週一至週日，每週一自動刷新）
+      var now = new Date();
+      var day = now.getDay(); // 0 是週日, 1 是週一, ..., 6 是週六
+      var diffToMon = (day === 0 ? -6 : 1 - day);
+      var monDate = new Date(now.getTime() + diffToMon * 86400000);
+      var sunDate = new Date(monDate.getTime() + 6 * 86400000);
+      var weekStart = Utilities.formatDate(monDate, "Asia/Taipei", "yyyy-MM-dd");
+      var weekEnd = Utilities.formatDate(sunDate, "Asia/Taipei", "yyyy-MM-dd");
 
       // 建立 account -> nickname 映射表
       var uRows = userSheet.getDataRange().getValues();
@@ -396,8 +404,8 @@ function doPost(e) {
         var status = String(rows[i][7] || "active");
 
         var isRoutine = (rows[i][11] == 1 || rows[i][11] === true || rows[i][11] === "1" || tag.indexOf("例行") !== -1);
-        var isTodayTask = (dDate === todayStr) || isRoutine;
-        if (isTodayTask) {
+        var isThisWeekTask = (dDate >= weekStart && dDate <= weekEnd) || isRoutine;
+        if (isThisWeekTask) {
           if (!stats[acc]) {
             stats[acc] = { total: 0, completed: 0 };
           }
@@ -437,6 +445,8 @@ function doPost(e) {
 
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
+        weekStart: weekStart,
+        weekEnd: weekEnd,
         rankings: rankings
       })).setMimeType(ContentService.MimeType.JSON);
     }
