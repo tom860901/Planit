@@ -36,25 +36,26 @@ function triggerAIDecompose() {
   if (!title) { alert("請先輸入上方目標名稱！"); titleInput.focus(); return; }
 
   const aiBtn = document.getElementById('ai-decompose-btn');
-  const originalText = aiBtn.innerHTML;
+  const defaultText = "🪄 一鍵 AI 拆解";
   aiBtn.innerHTML = "🧠 思考中...";
   aiBtn.disabled = true;
 
   callGASAPI({ action: 'aiDecompose', title: title }, (res) => {
-    aiBtn.innerHTML = originalText;
     aiBtn.disabled = false;
     if (res && res.success && res.steps && res.steps.length > 0) {
+      aiBtn.innerHTML = defaultText;
       const container = document.getElementById('manual-subtasks-container');
       container.innerHTML = "";
       res.steps.forEach(stepText => { addManualSubtaskInput(stepText); });
       showToast("✨ AI 步驟拆解完成！", "info");
     } else {
-      showToast((res && res.msg) || "AI 拆解失敗，請檢查後端 API 設定！", "warning");
+      aiBtn.innerHTML = "🔁 重試 AI 拆解";
+      showToast((res && res.msg) || "⚠️ AI 拆解逾時或失敗，請點擊按鈕重試", "warning", 3500);
     }
   }, (err) => {
-    aiBtn.innerHTML = originalText;
     aiBtn.disabled = false;
-    showToast("AI 連線失敗：" + err, "danger");
+    aiBtn.innerHTML = "🔁 重試 AI 拆解";
+    showToast("⚠️ AI 連線逾時，請點擊「🔁 重試 AI 拆解」再試一次！", "warning", 4000);
   });
 }
 
@@ -65,6 +66,12 @@ function openTaskModal() {
   document.getElementById('manual-subtasks-container').innerHTML = '';
   document.getElementById('new-task-input').value = "";
   document.getElementById('new-task-duedate').value = ""; // 預設不設定任何時間，由使用者自訂
+
+  const aiBtn = document.getElementById('ai-decompose-btn');
+  if (aiBtn) {
+    aiBtn.innerHTML = "🪄 一鍵 AI 拆解";
+    aiBtn.disabled = false;
+  }
 
   const persistentCb = document.getElementById('new-task-persistent');
   if (persistentCb) persistentCb.checked = false; // 預設不勾選，由使用者自由決定
@@ -142,6 +149,13 @@ function openTaskDetail(taskId) {
   const task = allTasksData.find(t => t.id === taskId);
   if (!task) return;
   currentDetailTaskId = taskId;
+
+  isCompletingTask = false;
+  const completeBtn = document.getElementById('detail-complete-btn');
+  if (completeBtn) {
+    completeBtn.disabled = false;
+    completeBtn.innerText = "✅ 完成";
+  }
 
   document.getElementById('edit-task-title').value    = task.title;
   document.getElementById('edit-task-duedate').value  = task.dueDate || '';
@@ -269,7 +283,10 @@ function closeDetailModal() {
 
 // ── 完成任務 ────────────────────────────────────────────────
 
+let isCompletingTask = false;
+
 function markTaskCompleted() {
+  if (isCompletingTask) return;
   if (!currentDetailTaskId) return;
   const task = allTasksData.find(t => t.id === currentDetailTaskId);
   if (!task) return;
@@ -281,9 +298,33 @@ function markTaskCompleted() {
     return;
   }
 
-  const idx = allTasksData.findIndex(t => t.id === currentDetailTaskId);
-  allTasksData[idx].status = 'completed';
-  callGASAPI({ action: 'updateTaskStatus', taskId: currentDetailTaskId, account: currentUser, status: 'completed' }, () => {});
+  isCompletingTask = true;
+  const completeBtn = document.getElementById('detail-complete-btn');
+  if (completeBtn) {
+    completeBtn.disabled = true;
+    completeBtn.innerText = "⏳ 處理中...";
+  }
+
+  const targetId = currentDetailTaskId;
+  const idx = allTasksData.findIndex(t => t.id === targetId);
+  if (idx !== -1) {
+    allTasksData[idx].status = 'completed';
+  }
+
+  callGASAPI({ action: 'updateTaskStatus', taskId: targetId, account: currentUser, status: 'completed' }, () => {
+    isCompletingTask = false;
+    if (completeBtn) {
+      completeBtn.disabled = false;
+      completeBtn.innerText = "✅ 完成";
+    }
+  }, (err) => {
+    isCompletingTask = false;
+    if (completeBtn) {
+      completeBtn.disabled = false;
+      completeBtn.innerText = "✅ 完成";
+    }
+  });
+
   showToast("🎉 太棒了！完成一項任務！", "success");
   closeDetailModal();
 }

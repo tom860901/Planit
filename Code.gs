@@ -153,18 +153,23 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 5. 更新狀態（分戶防護）
+    // 5. 更新狀態（分戶防護與防重複完成）
     if (action === "updateTaskStatus") {
       var rows = sheet.getDataRange().getValues();
       var reqAcc = cleanStr(data.account);
+      var updated = false;
       for (var i = 1; i < rows.length; i++) {
         if (cleanStr(rows[i][0]) === cleanStr(data.taskId)) {
           if (reqAcc && cleanStr(rows[i][1]) !== reqAcc) continue;
+          if (cleanStr(rows[i][7]) === cleanStr(data.status)) {
+            return ContentService.createTextOutput(JSON.stringify({ success: true, duplicate: true })).setMimeType(ContentService.MimeType.JSON);
+          }
           sheet.getRange(i + 1, 8).setValue(data.status);
+          updated = true;
           break;
         }
       }
-      return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+      return ContentService.createTextOutput(JSON.stringify({ success: updated })).setMimeType(ContentService.MimeType.JSON);
     }
 
     // 6. 更新子任務（分戶防護）
@@ -213,7 +218,7 @@ function doPost(e) {
 
       if (email) {
         try {
-          MailApp.sendEmail({ to: email, subject: "✨ 歡迎加入 Planit！", htmlBody: "<p>註冊成功！歡迎使用。</p>" });
+          MailApp.sendEmail({ to: email, name: "Planit 敏捷工作中心", subject: "✨ 歡迎加入 Planit！", htmlBody: "<p>註冊成功！歡迎使用。</p>" });
         } catch(e) {}
       }
 
@@ -282,7 +287,7 @@ function doPost(e) {
       userSheet.getRange(userRowIndex, 2).setValue("'" + tempPassword);
 
       try {
-        MailApp.sendEmail({ to: targetEmail, subject: "🔐 Planit 臨時密碼通知", htmlBody: "<p>您的臨時密碼為：<strong>" + tempPassword + "</strong></p>" });
+        MailApp.sendEmail({ to: targetEmail, name: "Planit 敏捷工作中心", subject: "🔐 Planit 臨時密碼通知", htmlBody: "<p>您的臨時密碼為：<strong>" + tempPassword + "</strong></p>" });
         return ContentService.createTextOutput(JSON.stringify({ success: true, msg: "臨時密碼已寄出！" })).setMimeType(ContentService.MimeType.JSON);
       } catch(e) {
         return ContentService.createTextOutput(JSON.stringify({ success: false, msg: "信件發送失敗。" })).setMimeType(ContentService.MimeType.JSON);
@@ -448,6 +453,55 @@ function doPost(e) {
         }
       }
       return ContentService.createTextOutput(JSON.stringify({ success: false, msg: "查無此使用者" })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 18. 重設展示乾淨資料（清理測試髒資料並還原示範任務）
+    if (action === "resetDemoAccount") {
+      var reqAcc = cleanStr(data.account);
+      if (!reqAcc) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, msg: "請指定帳號" })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      // 1. 清理 Tasks 表中該帳號的所有歷史與測試卡片（由後往前刪避免索引偏移）
+      var rows = sheet.getDataRange().getValues();
+      for (var i = rows.length - 1; i >= 1; i--) {
+        if (cleanStr(rows[i][1]) === reqAcc) {
+          sheet.deleteRow(i + 1);
+        }
+      }
+
+      // 2. 清理 Users 表中的暱稱與打卡紀錄
+      var uRows = userSheet.getDataRange().getValues();
+      for (var u = 1; u < uRows.length; u++) {
+        if (cleanStr(uRows[u][0]) === reqAcc) {
+          userSheet.getRange(u + 1, 8).setValue(""); // 清空暱稱
+          userSheet.getRange(u + 1, 7).setValue(0);  // 重設打卡 Streak
+          break;
+        }
+      }
+
+      // 3. 植入 3 筆精緻且標準的示範任務
+      var todayStr = getTodayDateStr();
+      var nowTime = new Date().getTime();
+      
+      var demo1Id = "task_" + nowTime + "_1";
+      var demo1Steps = JSON.stringify([
+        { step: "彙整專案架構需求", done: true },
+        { step: "繪製系統流程與資料庫模型", done: false },
+        { step: "撰寫期末驗收展示簡報", done: false }
+      ]);
+      sheet.appendRow([demo1Id, "'" + reqAcc, "完成敏捷專案架構規劃", "🧠 深度專注", "🔴 緊急", demo1Steps, "'" + todayStr, "active", 2, 1, 1, 0]);
+
+      var demo2Id = "task_" + nowTime + "_2";
+      sheet.appendRow([demo2Id, "'" + reqAcc, "晨間專案站會與進度檢視", "⚡️ 碎片 (<15m)", "🟡 一般", "[]", "'" + todayStr, "active", 1, 1, 0, 1]);
+
+      var demo3Id = "task_" + nowTime + "_3";
+      sheet.appendRow([demo3Id, "'" + reqAcc, "團隊期末成果慶祝聚餐", "☕️ 生活/社交", "🟢 輕鬆", "[]", "'" + todayStr, "active", 1, 1, 0, 0]);
+
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        msg: "✨ 已成功重設為乾淨展示帳號！"
+      })).setMimeType(ContentService.MimeType.JSON);
     }
 
     return ContentService.createTextOutput(JSON.stringify({ success: false, msg: "未知操作 (action: " + action + ")" })).setMimeType(ContentService.MimeType.JSON);

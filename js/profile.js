@@ -101,3 +101,38 @@ async function submitPasswordReset() {
     }
   });
 }
+
+// ── 展示資料維護 ────────────────────────────────────────────
+
+/** 🧹 清除測試髒資料並重設展示帳號 */
+function resetDemoData() {
+  if (!confirm("⚠️ 確定要重設展示資料嗎？\n這將會清除您帳號底下的測試任務、恢復預設範例任務，並重設暱稱。")) {
+    return;
+  }
+  showToast("⏳ 正在重設展示帳號資料...", "info", 3000);
+  callGASAPI({ action: 'resetDemoAccount', account: currentUser }, (res) => {
+    if (res && res.success) {
+      // 清理 localStorage 中的暱稱與例行任務快取
+      localStorage.removeItem('planit_nick_' + currentUser);
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('planit_routine_spawn_')) {
+          localStorage.removeItem(key);
+        }
+      });
+      const nickInput = document.getElementById('profile-nickname-input');
+      if (nickInput) nickInput.value = "";
+      if (typeof updateAvatarBadge === 'function') updateAvatarBadge();
+
+      closeProfileModal();
+      showToast("✨ 展示帳號資料已重設為乾淨狀態！", "success", 3000);
+      if (typeof fetchTasks === 'function') {
+        fetchTasks();
+      }
+    } else {
+      showToast((res && res.msg) || "重設失敗，請稍後再試", "danger");
+    }
+  }, (err) => {
+    showToast("重設失敗：" + err, "danger");
+  });
+}
+

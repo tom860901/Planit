@@ -100,9 +100,14 @@ function renderTasks() {
         : `<div class="card-due-badge routine-due-badge">📌 常駐</div>`;
     }
 
+    const routineBadgeHtml = isRoutine ? `<span class="card-routine-badge">🔁 每日循環</span>` : '';
+
     card.innerHTML = `
       <div class="card-topbar">
-        <span class="card-tag-text">${(isRoutine && !task.tag.includes('🔁')) ? '🔁 ' : ''}${task.tag || ''}</span>
+        <div style="display:inline-flex; align-items:center; gap:5px; overflow:hidden; max-width:65%;">
+          <span class="card-tag-text">${task.tag || ''}</span>
+          ${routineBadgeHtml}
+        </div>
         ${dueHtml}
       </div>
       <div class="card-title-text">${task.title}</div>

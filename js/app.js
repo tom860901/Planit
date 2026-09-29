@@ -85,8 +85,9 @@ function autoSpawnDailyRoutineTasks() {
   }
 }
 
-/** 從 GAS 拉取任務並刷新所有 UI */
-function fetchTasks() {
+/** 從 GAS 拉取任務並刷新所有 UI（支援自動重試與手動恢復機制） */
+function fetchTasks(retryCount = 0) {
+  const maxRetries = 2;
   callGASAPI({ action: 'getTasks', account: currentUser }, (data) => {
     allTasksData = Array.isArray(data) ? data : [];
     autoSpawnDailyRoutineTasks();
@@ -94,8 +95,20 @@ function fetchTasks() {
     renderUpcomingPanel();
     renderTasks();
   }, () => {
-    document.getElementById('grid-container').innerHTML =
-      `<div style="text-align:center; padding:40px; color:#E63946;">任務載入失敗，請重新整理頁面。</div>`;
+    if (retryCount < maxRetries) {
+      console.warn(`[Planit] 任務載入失敗，正在進行第 ${retryCount + 1} 次自動重試...`);
+      setTimeout(() => {
+        fetchTasks(retryCount + 1);
+      }, 1500 * (retryCount + 1));
+    } else {
+      document.getElementById('grid-container').innerHTML =
+        `<div style="text-align:center; padding:40px; color:#E63946;">
+          <p style="margin-bottom:12px; font-weight:600;">⚠️ 雲端連線逾時，任務載入失敗</p>
+          <button class="btn-main btn-secondary" onclick="fetchTasks()" style="cursor:pointer; padding:6px 14px; font-size:0.88rem; border-radius:8px;">
+            🔄 點擊手動重試
+          </button>
+        </div>`;
+    }
   });
 }
 
