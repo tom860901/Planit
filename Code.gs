@@ -780,7 +780,7 @@ function generateSmartFallbackSteps(title) {
       "進行收操拉筋與補充營養水分"
     ];
   }
-  if (/(讀書|閱讀|考試|考證|學習|課程)/i.test(t)) {
+  if (/(讀書|閱讀|考試|考證|學習|課程|複習)/i.test(t)) {
     return [
       "設定今日閱讀章節或複習進度",
       "專注研讀內容並標註關鍵重點",

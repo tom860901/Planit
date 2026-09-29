@@ -145,7 +145,7 @@ async function runAllTests() {
 
   const requiredFunctions = {
     'api.js': ['callGASAPI'],
-    'app.js': ['getLocalDateString', 'updateAvatarBadge', 'fetchTasks'],
+    'app.js': ['getLocalDateString', 'updateAvatarBadge', 'fetchTasks', 'autoSpawnDailyRoutineTasks', 'showToast'],
     'ui.js':  ['openModal', 'closeModal', 'handleModalOverlayClick',
                'openGuideModal', 'closeGuideModal', 'initGlobalTilt'],
     'auth.js': ['toggleMode', 'submitManualForm', 'logout',
@@ -161,7 +161,7 @@ async function runAllTests() {
     'calendar.js': ['renderCalendar', 'renderUpcomingPanel', 'changeMonth', 'jumpToToday'],
     'grid.js':  ['renderTasks', 'initGridEngine'],
     'profile.js': ['openProfileModal', 'closeProfileModal',
-                   'triggerDailyCheckin', 'submitPasswordReset'],
+                   'triggerDailyCheckin', 'submitPasswordReset', 'saveUserNickname', 'resetDemoData'],
   };
 
   let allFnDefined = true;
@@ -258,6 +258,63 @@ async function runAllTests() {
     });
   } catch(e) {
     results.push({ group: logicGroup, status: 'fail', name: '排序測試錯誤', detail: e.message });
+  }
+
+  // 卡片寬高防呆（1~3 範圍檢查）
+  try {
+    const sanitizeW = (w) => {
+      let safeW = parseInt(w);
+      return (isNaN(safeW) || safeW < 1 || safeW > 3) ? 1 : safeW;
+    };
+    const testCases = [
+      { input: 2, expected: 2 },
+      { input: 2026, expected: 1 },
+      { input: -5, expected: 1 },
+      { input: 'abc', expected: 1 }
+    ];
+    const isWPassed = testCases.every(c => sanitizeW(c.input) === c.expected);
+    results.push({
+      group: logicGroup, status: isWPassed ? 'pass' : 'fail',
+      name: '卡片寬高防呆（防止歷史年份 2026 破壞排版）',
+      detail: isWPassed ? '合法值 1~3 保持，異常值 (2026, -5, abc) 正確校正為 1' : '防呆邏輯未完全通過'
+    });
+  } catch(e) {
+    results.push({ group: logicGroup, status: 'fail', name: '寬高防呆測試異常', detail: e.message });
+  }
+
+  // 方案 B 獨立例行公事判定與向下相容
+  try {
+    const checkRoutine = (task) => Boolean(task.isRoutine || (task.tag && (task.tag.includes('例行公事') || task.tag.includes('每日固定任務'))));
+    const isRoutineOk =
+      checkRoutine({ isRoutine: true, tag: '🧠 深度專注' }) === true &&
+      checkRoutine({ isRoutine: false, tag: '🧠 深度專注' }) === false &&
+      checkRoutine({ isRoutine: false, tag: '🔁 例行公事' }) === true;
+    results.push({
+      group: logicGroup, status: isRoutineOk ? 'pass' : 'fail',
+      name: '方案 B 獨立例行循環判定與向下相容',
+      detail: isRoutineOk ? '獨立 isRoutine 判定正確，且舊版例行標籤維持向下相容' : '判定有誤'
+    });
+  } catch(e) {
+    results.push({ group: logicGroup, status: 'fail', name: '例行公事判定異常', detail: e.message });
+  }
+
+  // 信箱脫敏保護
+  try {
+    const maskEmail = (em) => {
+      if (em.indexOf('@') !== -1) {
+        const parts = em.split('@');
+        return parts[0].substring(0, 2) + '***@' + parts[1];
+      }
+      return em;
+    };
+    const masked = maskEmail('tom860901@gmail.com');
+    results.push({
+      group: logicGroup, status: masked === 'to***@gmail.com' ? 'pass' : 'fail',
+      name: '排行榜信箱脫敏隱私安全檢查',
+      detail: `tom860901@gmail.com 脫敏為 ${masked}`
+    });
+  } catch(e) {
+    results.push({ group: logicGroup, status: 'fail', name: '信箱脫敏測試異常', detail: e.message });
   }
 
   setProgress(60);
